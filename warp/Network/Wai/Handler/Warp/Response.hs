@@ -153,12 +153,14 @@ sendResponse settings conn ii th req reqidxhdr src response = do
           | isHead                  -> RspNoBody
           | otherwise               -> RspStream fb needsChunked
         ResponseRaw raw _           -> RspRaw raw src
+        ResponseSuperRaw raw        -> RspSuperRaw raw
     -- Make sure we don't hang on to 'response' (avoid space leak)
     !ret = case response of
-        ResponseFile    {} -> isPersist
-        ResponseBuilder {} -> isKeepAlive
-        ResponseStream  {} -> isKeepAlive
-        ResponseRaw     {} -> False
+        ResponseFile     {} -> isPersist
+        ResponseBuilder  {} -> isKeepAlive
+        ResponseStream   {} -> isKeepAlive
+        ResponseRaw      {} -> False
+        ResponseSuperRaw {} -> False
 
 ----------------------------------------------------------------
 
@@ -192,6 +194,7 @@ data Rsp = RspNoBody
          | RspBuilder Builder Bool
          | RspStream StreamingBody Bool
          | RspRaw (IO ByteString -> (ByteString -> IO ()) -> IO ()) (IO ByteString)
+         | RspSuperRaw ((ByteString -> IO ()) -> IO ())
 
 ----------------------------------------------------------------
 
@@ -261,6 +264,14 @@ sendRsp conn _ th _ _ _ _ _ _ (RspRaw withApp src) = do
         bs <- src
         unless (S.null bs) $ T.tickle th
         return bs
+    send bs = connSendAll conn bs >> T.tickle th
+
+----------------------------------------------------------------
+
+sendRsp conn _ th _ _ _ _ _ _ (RspSuperRaw withSender) = do
+    withSender send
+    return (Nothing, Nothing)
+  where
     send bs = connSendAll conn bs >> T.tickle th
 
 ----------------------------------------------------------------

@@ -79,6 +79,7 @@ module Network.Wai
     , responseLBS
     , responseStream
     , responseRaw
+    , responseSuperRaw
       -- ** Response accessors
     , responseStatus
     , responseHeaders
@@ -192,25 +193,34 @@ responseRaw :: (IO B.ByteString -> (B.ByteString -> IO ()) -> IO ())
             -> Response
 responseRaw = ResponseRaw
 
+
+-- | Create a super raw response.
+-- @since 3.3.0
+responseSuperRaw :: ((B.ByteString -> IO ()) -> IO ())
+                 -> Response
+responseSuperRaw = ResponseSuperRaw
+
 ----------------------------------------------------------------
 
 -- | Accessing 'H.Status' in 'Response'.
 --
 -- @since 1.2.0
 responseStatus :: Response -> H.Status
-responseStatus (ResponseFile    s _ _ _) = s
-responseStatus (ResponseBuilder s _ _  ) = s
-responseStatus (ResponseStream  s _ _  ) = s
-responseStatus (ResponseRaw _ res      ) = responseStatus res
+responseStatus (ResponseFile     s _ _ _) = s
+responseStatus (ResponseBuilder  s _ _  ) = s
+responseStatus (ResponseStream   s _ _  ) = s
+responseStatus (ResponseRaw      _ res  ) = responseStatus res
+responseStatus (ResponseSuperRaw _      ) = H.status409 -- Dummy value, get a crash if I use error here
 
 -- | Accessing 'H.ResponseHeaders' in 'Response'.
 --
 -- @since 2.0.0
 responseHeaders :: Response -> H.ResponseHeaders
-responseHeaders (ResponseFile    _ hs _ _) = hs
-responseHeaders (ResponseBuilder _ hs _  ) = hs
-responseHeaders (ResponseStream  _ hs _  ) = hs
-responseHeaders (ResponseRaw _ res)        = responseHeaders res
+responseHeaders (ResponseFile     _ hs _ _) = hs
+responseHeaders (ResponseBuilder  _ hs _  ) = hs
+responseHeaders (ResponseStream   _ hs _  ) = hs
+responseHeaders (ResponseRaw      _ res   ) = responseHeaders res
+responseHeaders (ResponseSuperRaw _       ) = [] -- Dummy value, get a crash if I use error here
 
 -- | Converting the body information in 'Response' to a 'StreamingBody'.
 --
@@ -248,6 +258,7 @@ responseToStream (ResponseFile s h fp Nothing) =
 responseToStream (ResponseBuilder s h b) =
     (s, h, \withBody -> withBody $ \sendChunk _flush -> sendChunk b)
 responseToStream (ResponseRaw _ res) = responseToStream res
+responseToStream (ResponseSuperRaw _) = error "Can't convert ResponseSuperRaw to stream"
 
 -- | Apply the provided function to the response header list of the Response.
 --
@@ -257,6 +268,7 @@ mapResponseHeaders f (ResponseFile s h b1 b2) = ResponseFile s (f h) b1 b2
 mapResponseHeaders f (ResponseBuilder s h b) = ResponseBuilder s (f h) b
 mapResponseHeaders f (ResponseStream s h b) = ResponseStream s (f h) b
 mapResponseHeaders _ r@(ResponseRaw _ _) = r
+mapResponseHeaders _ (ResponseSuperRaw _) = error "Can't get headers for ResponseSuperRaw"
 
 -- | Apply the provided function to the response status of the Response.
 --
@@ -266,6 +278,7 @@ mapResponseStatus f (ResponseFile s h b1 b2) = ResponseFile (f s) h b1 b2
 mapResponseStatus f (ResponseBuilder s h b) = ResponseBuilder (f s) h b
 mapResponseStatus f (ResponseStream s h b) = ResponseStream (f s) h b
 mapResponseStatus _ r@(ResponseRaw _ _) = r
+mapResponseStatus _ (ResponseSuperRaw _) = error "Can't get status for ResponseSuperRaw"
 
 ----------------------------------------------------------------
 

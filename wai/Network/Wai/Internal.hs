@@ -134,6 +134,7 @@ data Response
     | ResponseBuilder H.Status H.ResponseHeaders Builder
     | ResponseStream H.Status H.ResponseHeaders StreamingBody
     | ResponseRaw (IO B.ByteString -> (B.ByteString -> IO ()) -> IO ()) Response
+    | ResponseSuperRaw ((B.ByteString -> IO ()) -> IO ())
   deriving Typeable
 
 -- | Represents a streaming HTTP response body. It's a function of two
