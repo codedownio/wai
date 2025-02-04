@@ -37,6 +37,7 @@ import Data.ByteString.Lazy.Char8 ()
 import qualified Network.HTTP.Types as H
 import qualified Network.Wai as W
 import Prelude hiding (FilePath)
+import System.FilePath ((</>))
 
 import Data.ByteString.Builder (toLazyByteString)
 
@@ -257,11 +258,11 @@ staticAppPieces _ _ req sendResponse
 staticAppPieces _ [".hidden", "folder.png"] _ sendResponse =
     sendResponse $
         W.responseLBS H.status200 [("Content-Type", "image/png")] $
-            L.fromChunks [$(makeRelativeToProject "images/folder.png" >>= embedFile)]
+            L.fromChunks [$(makeRelativeToProject ("images" </> "folder.png") >>= embedFile)]
 staticAppPieces _ [".hidden", "haskell.png"] _ sendResponse =
     sendResponse $
         W.responseLBS H.status200 [("Content-Type", "image/png")] $
-            L.fromChunks [$(makeRelativeToProject "images/haskell.png" >>= embedFile)]
+            L.fromChunks [$(makeRelativeToProject ("images" </> "haskell.png") >>= embedFile)]
 staticAppPieces ss rawPieces req sendResponse = liftIO $ do
     case toPieces rawPieces of
         Just pieces -> checkPieces ss pieces req >>= response
