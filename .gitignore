@@ -13,3 +13,4 @@ stack*.yaml.lock
 dist-newstyle/
 .hie
 *.code-workspace
+.direnv

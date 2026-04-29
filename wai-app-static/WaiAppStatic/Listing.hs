@@ -17,7 +17,6 @@ import WaiAppStatic.Types
 import System.Locale (defaultTimeLocale)
 #endif
 import Data.List (sortBy)
-import Util
 
 import qualified Text.Blaze.Html.Renderer.Utf8 as HU
 
@@ -44,13 +43,10 @@ defaultListing pieces (Folder contents) = do
                                 , "td.size { text-align: right; font-size: 0.7em; width: 50px }"
                                 , "td.date { text-align: right; font-size: 0.7em; width: 130px }"
                                 , "td { padding-right: 1em; padding-left: 1em; }"
-                                , "th.first { background-color: white; width: 24px }"
-                                , "td.first { padding-right: 0; padding-left: 0; text-align: center }"
                                 , "tr { background-color: white; }"
                                 , "tr.alt { background-color: #A3B5BA}"
                                 , "th { background-color: #3C4569; color: white; font-size: 1.125em; }"
                                 , "h1 { width: 760px; margin: 1em auto; font-size: 1em; font-family: sans-serif }"
-                                , "img { width: 20px }"
                                 , "a { text-decoration: none }"
                                 ]
                 H.body $ do
@@ -59,11 +55,8 @@ defaultListing pieces (Folder contents) = do
                                 "" : _ -> True
                                 _ -> False
                     H.h1 $ showFolder' hasTrailingSlash $ filter (not . T.null . fromPiece) pieces
-                    renderDirectoryContentsTable (map fromPiece pieces) haskellSrc folderSrc fps''
+                    renderDirectoryContentsTable (map fromPiece pieces) fps''
   where
-    image x = T.unpack $ T.concat [relativeDirFromPieces pieces, ".hidden/", x, ".png"]
-    folderSrc = image "folder"
-    haskellSrc = image "haskell"
     showName "" = "root"
     showName x = x
 
@@ -94,14 +87,11 @@ defaultListing pieces (Folder contents) = do
 renderDirectoryContentsTable
     :: [T.Text]
     -- ^ requested path info
-    -> String
-    -> String
     -> [Either FolderName File]
     -> H.Html
-renderDirectoryContentsTable pathInfo' haskellSrc folderSrc fps =
+renderDirectoryContentsTable pathInfo' fps =
     H.table $ do
         H.thead $ do
-            H.th ! A.class_ "first" $ H.img ! A.src (H.toValue haskellSrc)
             H.th "Name"
             H.th "Modified"
             H.th "Size"
@@ -117,13 +107,6 @@ renderDirectoryContentsTable pathInfo' haskellSrc folderSrc fps =
     mkRow (md, alt) =
         (if alt then (! A.class_ "alt") else id) $
             H.tr $ do
-                H.td ! A.class_ "first" $
-                    case md of
-                        Left{} ->
-                            H.img
-                                ! A.src (H.toValue folderSrc)
-                                ! A.alt "Folder"
-                        Right{} -> return ()
                 let name =
                         case either id fileName md of
                             (fromPiece -> "") -> unsafeToPiece ".."

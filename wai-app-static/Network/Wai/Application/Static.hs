@@ -3,7 +3,6 @@
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 -- | Static file serving for WAI.
 module Network.Wai.Application.Static (
@@ -40,7 +39,6 @@ import Prelude hiding (FilePath)
 
 import Data.ByteString.Builder (toLazyByteString)
 
-import Data.FileEmbed (embedFile, makeRelativeToProject)
 
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -254,14 +252,6 @@ staticAppPieces _ _ req sendResponse
                 H.status405
                 [("Content-Type", "text/plain")]
                 "Only GET or HEAD is supported"
-staticAppPieces _ [".hidden", "folder.png"] _ sendResponse =
-    sendResponse $
-        W.responseLBS H.status200 [("Content-Type", "image/png")] $
-            L.fromChunks [$(makeRelativeToProject "images/folder.png" >>= embedFile)]
-staticAppPieces _ [".hidden", "haskell.png"] _ sendResponse =
-    sendResponse $
-        W.responseLBS H.status200 [("Content-Type", "image/png")] $
-            L.fromChunks [$(makeRelativeToProject "images/haskell.png" >>= embedFile)]
 staticAppPieces ss rawPieces req sendResponse = liftIO $ do
     case toPieces rawPieces of
         Just pieces -> checkPieces ss pieces req >>= response

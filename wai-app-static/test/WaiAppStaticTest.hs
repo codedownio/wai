@@ -61,12 +61,6 @@ spec = do
                     assertStatus 403
                         =<< request (setRawPathInfo defRequest path)
 
-        it "200 for hidden paths" $
-            webApp $
-                forM_ [".hidden/folder.png", ".hidden/haskell.png"] $ \path ->
-                    assertStatus 200
-                        =<< request (setRawPathInfo defRequest path)
-
         it "404 for non-existent files" $
             webApp $
                 assertStatus 404
@@ -125,9 +119,6 @@ spec = do
         it "directory listing for index" $ fileServerApp $ do
             resp <- request (setRawPathInfo defRequest "a/")
             assertStatus 200 resp
-            -- note the unclosed img tags so both /> and > will pass
-            assertBodyContains "<img src=\"../.hidden/haskell.png\"" resp
-            assertBodyContains "<img src=\"../.hidden/folder.png\" alt=\"Folder\"" resp
             assertBodyContains "<a href=\"b\">b</a>" resp
 
         it "200 when invalid if-modified-since header" $ fileServerApp $ do
